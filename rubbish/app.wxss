@@ -1,0 +1,30 @@
+page {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  background-color: #f5f7fa;
+  font-size: 14px;
+  color: #333;
+}
+/* 通用容器 */
+.container {
+  padding: 15px;
+  box-sizing: border-box;
+}
+/* 卡片通用样式 */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+/* 按钮通用 */
+.btn-primary {
+  background-color: #1677ff;
+  color: #fff;
+  border-radius: 8px;
+}
+.btn-default {
+  background-color: #f0f2f5;
+  color: #666;
+  border-radius: 8px;
+}
