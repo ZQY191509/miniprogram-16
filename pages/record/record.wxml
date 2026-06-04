@@ -7,7 +7,7 @@
     <text class="top-title">分类记录</text>
     <view class="top-actions">
       <text class="top-btn" bindtap="onExport">📤 导出</text>
-      <text class="top-btn clear-btn">清空</text>
+      <text class="top-btn clear-btn" bindtap="onClear">清空</text>
     </view>
   </view>
 
@@ -41,27 +41,37 @@
     <!-- 分类分布 -->
     <view class="card chart-card">
       <text class="chart-title">分类分布</text>
-      <view class="dist-item" wx:for="{{categoryDist}}" wx:key="name">
-        <view class="dist-head">
-          <view class="dist-dot" style="background:{{item.color}}"></view>
-          <text class="dist-name">{{item.name}}</text>
-          <text class="dist-count">{{item.count}}次</text>
+      <view class="dist-list" wx:if="{{stats.total > 0}}">
+        <view class="dist-item" wx:for="{{categoryDist}}" wx:key="name">
+          <view class="dist-label">
+            <view class="dist-dot" style="background:{{item.color}}"></view>
+            <text>{{item.name}}</text>
+          </view>
+          <view class="dist-bar-wrap">
+            <view class="dist-bar" style="width:{{item.pct}};background:{{item.color}}"></view>
+          </view>
+          <text class="dist-count">{{item.count}}次 {{item.pct}}%</text>
         </view>
-        <view class="dist-bar">
-          <view class="dist-fill" style="width:{{item.pct}}%; background:{{item.color}}"></view>
-        </view>
+      </view>
+      <view class="chart-empty" wx:else>
+        <text class="empty-icon">📊</text>
+        <text class="empty-text">暂无数据</text>
       </view>
     </view>
 
     <!-- 近7天趋势 -->
     <view class="card chart-card">
       <text class="chart-title">近7天趋势</text>
-      <view class="trend-chart">
+      <view class="trend-bars" wx:if="{{stats.total > 0}}">
         <view class="trend-col" wx:for="{{weekTrend}}" wx:key="date">
-          <text class="trend-val">{{item.count}}</text>
-          <view class="trend-bar" style="height:{{item.count * 12}}px; background:{{item.color}}"></view>
+          <text class="trend-count" wx:if="{{item.count > 0}}">{{item.count}}</text>
+          <view class="trend-bar" style="height:{{item.count * 20 + 8}}px;background:{{item.color}}"></view>
           <text class="trend-date">{{item.date}}</text>
         </view>
+      </view>
+      <view class="chart-empty" wx:else>
+        <text class="empty-icon">📈</text>
+        <text class="empty-text">暂无数据</text>
       </view>
     </view>
   </view>
@@ -86,80 +96,38 @@
       <text class="section-count">共 {{stats.total}} 条</text>
     </view>
 
-    <!-- 今天 -->
-    <view class="date-group">
-      <text class="date-title">今天</text>
-
-      <view class="card record-item" wx:for="{{records}}" wx:key="id" wx:if="{{index < 3}}">
-        <view class="item-left">
-          <view class="item-dot" style="background:{{index === 0 ? '#1677ff' : index === 1 ? '#52c41a' : '#f53f3f'}}"></view>
-        </view>
-        <view class="item-body">
-          <view class="item-row">
-            <text class="item-content">{{item.content}}</text>
-            <text class="item-type {{index === 0 ? 'blue' : index === 1 ? 'green' : 'red'}}">{{item.category}}</text>
-          </view>
-          <view class="item-row">
-            <text class="item-time">{{item.time}}</text>
-            <text class="item-conf">置信度 {{item.confidence}}%</text>
-          </view>
-        </view>
-        <view class="item-right">
-          <text class="fav-btn {{item.favorited ? 'fav' : ''}}" data-id="{{item.id}}" bindtap="toggleFavorite">{{item.favorited ? '⭐' : '☆'}}</text>
-        </view>
-      </view>
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{dateGroups.length === 0}}">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无分类记录</text>
+      <text class="empty-sub">前往首页开始智能分类吧</text>
     </view>
 
-    <!-- 昨天 -->
-    <view class="date-group">
-      <text class="date-title">昨天</text>
+    <!-- 按日期分组 -->
+    <view class="date-group" wx:for="{{dateGroups}}" wx:key="date">
+      <text class="date-title">{{item.label}}</text>
 
-      <view class="card record-item" wx:for="{{records}}" wx:key="id" wx:if="{{index >= 3 && index < 5}}">
+      <view class="card record-item" wx:for="{{item.items}}" wx:for-item="record" wx:key="_id">
         <view class="item-left">
-          <view class="item-dot" style="background:{{index === 3 ? '#1677ff' : '#8c8c8c'}}"></view>
+          <view class="item-dot" style="background:{{record.dotColor}}"></view>
         </view>
         <view class="item-body">
           <view class="item-row">
-            <text class="item-content">{{item.content}}</text>
-            <text class="item-type {{index === 3 ? 'blue' : 'gray'}}">{{item.category}}</text>
+            <text class="item-content">{{record.content}}</text>
+            <text class="item-type {{record.typeClass}}">{{record.category}}</text>
           </view>
           <view class="item-row">
-            <text class="item-time">{{item.time}}</text>
-            <text class="item-conf">置信度 {{item.confidence}}%</text>
+            <text class="item-time">{{record.displayTime}}</text>
           </view>
         </view>
         <view class="item-right">
-          <text class="fav-btn" data-id="{{item.id}}" bindtap="toggleFavorite">☆</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 更早 -->
-    <view class="date-group">
-      <text class="date-title">05/31</text>
-
-      <view class="card record-item" wx:for="{{records}}" wx:key="id" wx:if="{{index >= 5}}">
-        <view class="item-left">
-          <view class="item-dot" style="background:#f53f3f"></view>
-        </view>
-        <view class="item-body">
-          <view class="item-row">
-            <text class="item-content">{{item.content}}</text>
-            <text class="item-type red">{{item.category}}</text>
-          </view>
-          <view class="item-row">
-            <text class="item-time">{{item.time}}</text>
-            <text class="item-conf">置信度 {{item.confidence}}%</text>
-          </view>
-        </view>
-        <view class="item-right">
-          <text class="fav-btn">☆</text>
+          <text class="fav-btn {{record.favorited ? 'fav' : ''}}" data-id="{{record._id}}" bindtap="toggleFavorite">{{record.favorited ? '⭐' : '☆'}}</text>
         </view>
       </view>
     </view>
 
     <!-- 加载更多 -->
-    <view class="load-more">
+    <view class="load-more" wx:if="{{dateGroups.length > 0}}">
       <text class="load-text">— 上拉加载更多 —</text>
     </view>
   </view>

@@ -12,14 +12,26 @@
       "outputPath": ""
     },
     "useCompilerPlugins": false,
-    "minifyWXML": false
+    "minifyWXML": false,
+    "compileWorklet": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "minifyWXSS": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
   "compileType": "miniprogram",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "cloud": true,
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],
     "include": []
   },
-  "appid": "wxca98ecd5f2122a01",
-  "editorSetting": {}
+  "appid": "wx13cc1a58ac85eec6",
+  "editorSetting": {},
+  "libVersion": "3.14.3"
 }
