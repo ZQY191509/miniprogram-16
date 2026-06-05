@@ -123,14 +123,52 @@ Page({
   doClassify() {
     this.setData({ classifying: true })
 
-    // 构建请求数据
+    // 如果有图片，先转为 Base64 再发送
+    if (this.data.imageList.length > 0) {
+      this.imagesToBase64(this.data.imageList, (base64Images) => {
+        this.sendClassifyRequest(
+          this.data.inputText.trim(),
+          base64Images
+        )
+      })
+    } else {
+      // 纯文字分类，直接发送
+      this.sendClassifyRequest(this.data.inputText.trim(), [])
+    }
+  },
+
+  // 将本地图片路径转为 Base64
+  imagesToBase64(filePaths, callback) {
+    const fs = wx.getFileSystemManager()
+    const tasks = filePaths.map((filePath) => {
+      return new Promise((resolve, reject) => {
+        fs.readFile({
+          filePath: filePath,
+          encoding: 'base64',
+          success: (res) => resolve(res.data),
+          fail: (err) => {
+            console.error('读取图片失败:', err)
+            reject(err)
+          }
+        })
+      })
+    })
+
+    Promise.all(tasks)
+      .then((base64List) => callback(base64List))
+      .catch(() => {
+        this.setData({ classifying: false })
+        wx.showToast({ title: '图片读取失败', icon: 'none' })
+      })
+  },
+
+  // 发送分类请求
+  sendClassifyRequest(text, images) {
     const requestData = {
-      text: this.data.inputText.trim(),
-      images: this.data.imageList
+      text: text,
+      images: images      // 这里发送的是 Base64 字符串数组
     }
 
-    // 如果有图片，先转换为base64发送（或上传获取URL）
-    // 这里先以简单方式发送文本，图片路径
     wx.request({
       url: config.classifyApiUrl,
       method: 'POST',
