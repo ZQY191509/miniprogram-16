@@ -1,50 +1,207 @@
 /* pages/mine/mine.wxss */
-/* 用户卡片 */
+
+/* ===== 用户卡片 ===== */
 .user-card {
   display: flex;
   align-items: center;
+  padding: 20px 15px;
 }
-.avatar {
-  width: 60px;
-  height: 60px;
+
+.login-card {
+  flex-direction: column;
+  text-align: center;
+}
+
+/* 头像按钮 */
+.avatar-btn {
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  margin-right: 15px;
+  padding: 0;
+  margin: 0 15px 0 0;
+  background: transparent;
+  border: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.avatar-img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid #e8f4ff;
+  display: block;
+}
+
+.avatar-edit-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: #1677ff;
+  border-radius: 50%;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.default-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
   background: #e8e8e8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 36px;
 }
+
+/* 用户信息 */
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.login-card .user-info {
+  text-align: center;
+}
+
+.nickname-row {
+  margin-bottom: 5px;
+}
+
+.nickname-input {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  padding: 0;
+  min-height: 28px;
+  line-height: 28px;
+}
+
 .user-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
   display: block;
   margin-bottom: 5px;
 }
-.user-desc {
+
+.login-tip {
+  font-size: 14px;
+  color: #999;
+  font-weight: normal;
+  margin-bottom: 12px;
+}
+
+.user-id {
   font-size: 12px;
   color: #999;
 }
-/* 菜单列表 */
+
+/* 登录按钮 */
+.login-btn {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  color: #fff;
+  font-size: 14px;
+  border-radius: 20px;
+  padding: 8px 30px;
+  border: none;
+  display: inline-block;
+}
+
+.login-btn::after {
+  border: none;
+}
+
+/* ===== 菜单区域 ===== */
+.menu-card {
+  padding: 10px 15px;
+}
+
+.menu-section-title {
+  font-size: 12px;
+  color: #999;
+  padding: 8px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
 .menu-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #f5f5f5;
 }
+
 .menu-item:last-child {
   border-bottom: none;
 }
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.menu-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .arrow {
   font-size: 20px;
-  color: #999;
+  color: #c0c0c0;
   font-weight: 300;
 }
-/* 版权 */
+
+.cache-size {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 退出登录 */
+.logout-item {
+  /* 无额外特殊样式 */
+}
+
+.logout-icon {
+  opacity: 0.7;
+}
+
+.logout-text {
+  color: #f53f3f;
+}
+
+/* ===== 版权 ===== */
 .copyright {
   text-align: center;
   font-size: 12px;
   color: #999;
   margin-top: 30px;
+  padding-bottom: 30px;
+}
+
+.version {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #bbb;
 }

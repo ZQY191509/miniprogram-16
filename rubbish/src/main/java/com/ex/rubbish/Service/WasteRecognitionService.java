@@ -3,8 +3,15 @@ package com.ex.rubbish.Service;
 import com.ex.rubbish.Entity.Re.WasteItem;
 import com.ex.rubbish.Entity.Re.WasteRecognitionRequest;
 import com.ex.rubbish.Entity.Re.WasteRecognitionResponse;
+import com.ex.rubbish.Entity.UserCategory;
+import com.ex.rubbish.Repository.UserCategoryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.util.Base64;
+
 
 /**
  * 垃圾识别服务（百度AI版）
@@ -13,6 +20,9 @@ import java.util.*;
 public class WasteRecognitionService {
 
     private final BaiduAIService baiduAIService;
+    
+    @Autowired
+    private UserCategoryRepository userCategoryRepository;
 
     // 构造器注入（Spring推荐的方式）
     public WasteRecognitionService(BaiduAIService baiduAIService) {
@@ -517,15 +527,48 @@ public class WasteRecognitionService {
         return new WasteRecognitionResponse(resultList);
     }
 
+
+
     /**
      * 将识别出的物品名称，映射为垃圾分类
+     * 优先级：1. CATEGORY_MAP映射表  2. H2数据库  3. 返回-1（未找到）
      */
     private int mapToCategory(String itemName) {
+        // 1. 先查本地映射表
         for (Map.Entry<String, Integer> entry : CATEGORY_MAP.entrySet()) {
             if (itemName.contains(entry.getKey())) {
                 return entry.getValue();
             }
         }
-        return 3; // 默认：其他垃圾
+        
+        // 2. 再查H2数据库（用户反馈数据）
+        try {
+            UserCategory userCategory = userCategoryRepository.findByItemName(itemName);
+            if (userCategory != null) {
+                return userCategory.getCategory();
+            }
+        } catch (Exception e) {
+            // 数据库查询失败，记录日志但不中断流程
+            System.err.println("查询H2数据库失败: " + e.getMessage());
+        }
+        
+        // 3. 都未找到，返回-1
+        return -1;
+    }
+    
+    /**
+     * 保存用户反馈的分类到H2数据库
+     */
+    public void saveUserFeedback(String itemName, Integer category) {
+        try {
+            // 检查是否已存在
+            if (!userCategoryRepository.existsByItemName(itemName)) {
+                UserCategory userCategory = new UserCategory(itemName, category);
+                userCategoryRepository.save(userCategory);
+                System.out.println("用户反馈已保存到H2数据库: " + itemName + " -> " + category);
+            }
+        } catch (Exception e) {
+            System.err.println("保存用户反馈失败: " + e.getMessage());
+        }
     }
 }

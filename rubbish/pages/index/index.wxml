@@ -19,7 +19,7 @@
       </view>
     </view>
     <view class="banner-dots">
-      <view class="dot {{currentBanner === index ? 'active' : ''}}" wx:for="{{banners}}" wx:key="*this" data-index="{{index}}" bindtap="switchBanner"></view>
+      <view class="dot {{currentBanner === index ? 'active' : ''}}" wx:for="{{banners}}" wx:key="icon" data-index="{{index}}" bindtap="switchBanner"></view>
     </view>
   </view>
 
@@ -29,6 +29,12 @@
       <view class="action-icon">{{item.icon}}</view>
       <text class="action-text">{{item.text}}</text>
     </view>
+    <!-- 录音状态提示 -->
+<view class="recording-tip" wx:if="{{isRecording}}">
+  <view class="recording-animation">🎤</view>
+  <text>正在录音，点击停止</text>
+</view>
+
   </view>
 
   <!-- ===== 分类输入卡片 ===== -->

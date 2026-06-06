@@ -1,36 +1,106 @@
 <!--pages/mine/mine.wxml-->
 <view class="container">
-  <!-- 头像&名称 -->
-  <view class="card user-card">
-    <view class="avatar">👤</view>
+  <!-- ===== 用户信息卡片 ===== -->
+  <view class="card user-card" wx:if="{{isLoggedIn}}">
+    <!-- 头像 - 使用微信原生 chooseAvatar -->
+    <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <image class="avatar-img" src="{{userInfo.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+      <view class="avatar-edit-icon">📷</view>
+    </button>
     <view class="user-info">
-      <text class="user-name">分类工具用户</text>
-      <text class="user-desc">智能分类小程序 V1.0</text>
+      <view class="nickname-row">
+        <input 
+          class="nickname-input" 
+          type="nickname" 
+          value="{{userInfo.nickName}}"
+          placeholder="点击设置昵称"
+          bindchange="onNickNameChange"
+        />
+      </view>
+      <text class="user-id">账号: {{userInfo.displayId || '微信用户'}}</text>
     </view>
   </view>
 
-  <!-- 功能菜单列表 -->
+  <!-- ===== 未登录状态 ===== -->
+  <view class="card user-card login-card" wx:else>
+    <view class="avatar default-avatar">👤</view>
+    <view class="user-info">
+      <text class="user-name login-tip">点击登录，体验更多功能</text>
+      <button class="login-btn" bindtap="handleLogin">微信一键登录</button>
+    </view>
+  </view>
+
+  <!-- ===== 功能菜单列表 ===== -->
   <view class="card menu-card">
     <view class="menu-item" bindtap="goGuide">
-      <text>📖 垃圾分类指南</text>
+      <view class="menu-left">
+        <text class="menu-icon">📖</text>
+        <text>垃圾分类指南</text>
+      </view>
       <text class="arrow">›</text>
     </view>
-    <view class="menu-item">
-      <text>使用帮助</text>
+    <view class="menu-item" bindtap="goRecord">
+      <view class="menu-left">
+        <text class="menu-icon">📋</text>
+        <text>分类记录</text>
+      </view>
       <text class="arrow">›</text>
     </view>
-    <view class="menu-item">
-      <text>分类规则设置</text>
+    <view class="menu-item" bindtap="goHelp">
+      <view class="menu-left">
+        <text class="menu-icon">❓</text>
+        <text>使用帮助</text>
+      </view>
       <text class="arrow">›</text>
     </view>
-    <view class="menu-item">
-      <text>关于我们</text>
+    <view class="menu-item" bindtap="goAbout">
+      <view class="menu-left">
+        <text class="menu-icon">ℹ️</text>
+        <text>关于我们</text>
+      </view>
       <text class="arrow">›</text>
     </view>
   </view>
 
-  <!-- 底部版权 -->
+  <!-- ===== 账户管理 ===== -->
+  <view class="card menu-card">
+    <view class="menu-section-title">账户管理</view>
+    <view class="menu-item" bindtap="handleSwitchAccount">
+      <view class="menu-left">
+        <text class="menu-icon">🔄</text>
+        <text>切换账号</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="handleEditProfile">
+      <view class="menu-left">
+        <text class="menu-icon">⚙️</text>
+        <text>个人信息设置</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="handleClearCache">
+      <view class="menu-left">
+        <text class="menu-icon">🧹</text>
+        <text>清除缓存</text>
+      </view>
+      <view class="menu-right">
+        <text class="cache-size">{{cacheSize}}</text>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+    <view class="menu-item logout-item" bindtap="handleLogout" wx:if="{{isLoggedIn}}">
+      <view class="menu-left">
+        <text class="menu-icon logout-icon">🚪</text>
+        <text class="logout-text">退出登录</text>
+      </view>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- ===== 底部版权 ===== -->
   <view class="copyright">
     <text>© 2026 智能分类工具 版权所有</text>
+    <text class="version">版本 V1.0</text>
   </view>
 </view>
