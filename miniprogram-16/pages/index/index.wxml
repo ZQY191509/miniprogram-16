@@ -50,6 +50,23 @@
         <text>✨ {{classifying ? '分类中...' : '开始分类'}}</text>
       </button>
     </view>
+
+    <!-- 上传进度条 -->
+    <view class="progress-area" wx:if="{{classifying && uploadStage}}">
+      <view class="progress-info">
+        <text class="progress-stage">{{uploadStage}}</text>
+        <text class="progress-pct">{{uploadProgress}}%</text>
+      </view>
+      <view class="progress-bar-wrap">
+        <view class="progress-bar" style="width:{{uploadProgress}}%"></view>
+      </view>
+    </view>
+
+    <!-- 离线模式提示 -->
+    <view class="offline-tip" wx:if="{{isOfflineMode}}">
+      <text class="offline-icon">📡</text>
+      <text class="offline-text">离线模式：任务已缓存，网络恢复后自动上传</text>
+    </view>
   </view>
 
   <!-- ===== 4. 热门分类横向4个按钮 ===== -->

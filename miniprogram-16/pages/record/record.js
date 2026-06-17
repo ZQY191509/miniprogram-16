@@ -195,7 +195,7 @@ Page({
     const total = records.length || 1
     dist.forEach(d => {
       d.pct = Math.round((d.count / total) * 100)
-    })
+    })//百分比
 
     this.setData({ categoryDist: dist })
   },
