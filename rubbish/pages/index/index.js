@@ -11,47 +11,53 @@ const CATEGORY_COLOR = {
   '其他垃圾': '#8c8c8c'
 }
 
+// 功能词映射（用于搜索框锚点定位）
+const FUNCTION_KEYWORDS = {
+  '语音录入': 'voice',
+  '语音': 'voice',
+  '小贴士': 'tip',
+  '提示': 'tip',
+  '指南': 'guide',
+  '分类指南': 'guide',
+  '帮助': 'guide'
+}
+
 Page({
   data: {
     inputText: '',
+    searchText: '',        // 搜索框文本
     imageList: [],          // 上传的图片临时路径列表
     resultData: null,       // 分类结果 [{content, category, categoryIndex}]
     classifying: false,     // 正在分类中
     isRecording: false,
-    // 轮播Banner
-    banners: [
-      { icon: '📸', title: '拍照识别', desc: '拍照一键识别垃圾类别' },
-      { icon: '🎯', title: '精准分类', desc: 'AI算法准确率超96%' },
-      { icon: '🌱', title: '环保生活', desc: '垃圾分类，从我做起' }
-    ],
-    currentBanner: 0,
-    // 快捷功能
-    quickActions: [
-      { icon: '📝', text: '文字分类', key: 'text' },
-      { icon: '📷', text: '拍照识别', key: 'camera' },
-      { icon: '🎤', text: '语音录入', key: 'voice' },
-      { icon: '📋', text: '分类记录', key: 'history' }
-    ],
+    inputFocus: false,      // 输入框是否聚焦
+    scrollToView: '',       // 滚动锚点
     // 热门分类
     hotCategories: [
-      { name: '可回收物', icon: '♻️', color: '#1677ff', count: '128次' },
-      { name: '厨余垃圾', icon: '🍃', color: '#52c41a', count: '96次' },
-      { name: '有害垃圾', icon: '☣️', color: '#f53f3f', count: '43次' },
-      { name: '其他垃圾', icon: '🗑️', color: '#8c8c8c', count: '67次' }
+      { name: '可回收物', icon: '♻️', color: '#1677ff', key: 'recycle' },
+      { name: '厨余垃圾', icon: '🍃', color: '#52c41a', key: 'kitchen' },
+      { name: '有害垃圾', icon: '☣️', color: '#f53f3f', key: 'harmful' },
+      { name: '其他垃圾', icon: '🗑️', color: '#8c8c8c', key: 'other' }
     ],
     // 每日小贴士
-    tip: '废旧电池属于有害垃圾，需投入红色垃圾桶，切勿随意丢弃以免污染环境。'
+    tip: '废旧电池属于有害垃圾，需投入红色垃圾桶，切勿随意丢弃以免污染环境。',
+    tipTags: ['有害垃圾', '废电池', '环保知识'],
+    // 搜索结果弹窗
+    showSearchResult: false,
+    searchResultList: [],
+    // 拍照识别弹窗
+    showCameraModal: false,
+    cameraPreview: '',
+    cameraImagePath: '',
+    // 语音录入弹窗
+    showVoiceModal: false,
+    voiceText: ''
   },
-// ========== 新增：录音相关实例变量 ==========
+// ========== 录音相关实例变量 ==========
 recorderManager: null,
 innerAudioContext: null,
   onLoad() {
-    this.bannerTimer = setInterval(() => {
-      let next = this.data.currentBanner + 1
-      if (next >= this.data.banners.length) next = 0
-      this.setData({ currentBanner: next })
-    }, 3000)
-     // ========== 新增：初始化录音管理器 ==========
+     // ========== 初始化录音管理器 ==========
      this.recorderManager = wx.getRecorderManager()
      this.innerAudioContext = wx.createInnerAudioContext()
  
@@ -70,82 +76,240 @@ innerAudioContext: null,
   },
 
   onUnload() {
-    if (this.bannerTimer) clearInterval(this.bannerTimer)
-    // ========== 新增：释放音频资源 ==========
+    // ========== 释放音频资源 ==========
     if (this.innerAudioContext) {
       this.innerAudioContext.destroy()
     }
   },
 
-  // 轮播切换
-  switchBanner(e) {
-    const index = e.currentTarget.dataset.index
-    this.setData({ currentBanner: index })
+  // ===== 搜索框输入 =====
+  onSearchInput(e) {
+    this.setData({ searchText: e.detail.value })
   },
 
-  // 快捷功能
+  // ===== 搜索确认（双功能）=====
+  onSearchConfirm() {
+    const keyword = this.data.searchText.trim()
+    if (!keyword) {
+      wx.showToast({ title: '请输入搜索内容', icon: 'none' })
+      return
+    }
+
+    // 检查是否为功能词（锚点定位）
+    // 直接匹配或去除常见修饰词后匹配
+    let funcKey = FUNCTION_KEYWORDS[keyword]
+    if (!funcKey) {
+      // 尝试去除"我的"、"我要"等前缀
+      const cleanKeyword = keyword.replace(/^我的|^我要|^我要看|^打开|^查看/g, '').trim()
+      funcKey = FUNCTION_KEYWORDS[cleanKeyword]
+    }
+    
+    if (funcKey === 'voice') {
+      // 打开语音录入弹窗
+      this.setData({ showVoiceModal: true, searchText: '' })
+      return
+    } else if (funcKey === 'tip' || funcKey === 'tips') {
+      // 滚动到小贴士区域
+      this.setData({ scrollToView: 'tipArea', searchText: '' })
+      setTimeout(() => this.setData({ scrollToView: '' }), 500)
+      return
+    } else if (funcKey === 'guide') {
+      // 切换到指南tab
+      wx.switchTab({ url: '/pages/guide/guide' })
+      return
+    }
+
+    // 否则搜索物品分类（使用本地搜索，后端暂无搜索接口）
+    this.localSearch(keyword)
+  },
+
+  // ===== 搜索物品（本地搜索）=====
+  searchItem(keyword) {
+    this.localSearch(keyword)
+  },
+
+  // 本地搜索（备用）
+  localSearch(keyword) {
+    const localDB = [
+      { name: '电池', category: '有害垃圾' },
+      { name: '纸箱', category: '可回收物' },
+      { name: '剩饭', category: '厨余垃圾' },
+      { name: '纸巾', category: '其他垃圾' }
+    ]
+    const resultList = localDB.filter(item => item.name.includes(keyword))
+      .map(item => ({
+        name: item.name,
+        category: item.category,
+        color: CATEGORY_COLOR[item.category]
+      }))
+    this.setData({
+      showSearchResult: true,
+      searchResultList: resultList
+    })
+  },
+
+  // 关闭搜索结果弹窗
+  closeSearchResult() {
+    this.setData({ showSearchResult: false, searchResultList: [], searchText: '' })
+  },
+
+  // 阻止冒泡
+  preventBubble() {},
+
+  // 填入输入框（手动点击）
+  onFillInput(e) {
+    const name = e.currentTarget.dataset.name
+    this.setData({
+      inputText: name,
+      showSearchResult: false,
+      searchResultList: [],
+      searchText: ''
+    })
+    wx.showToast({ title: '已填入输入框', icon: 'success' })
+  },
+
+  // ===== 快捷功能栏 =====
   onAction(e) {
     const key = e.currentTarget.dataset.key
     if (key === 'camera') {
-      this.chooseImage()
+      // 打开拍照识别弹窗
+      this.setData({ showCameraModal: true })
     } else if (key === 'history') {
+      // 直接跳转历史页面
       wx.switchTab({ url: '/pages/record/record' })
     } else if (key === 'text') {
-      // 聚焦到输入框
-    } else if (key === 'voice') {
-      this.startVoiceInput()
-    }
-  },
-  // ========== 新增：开始语音输入 ==========
-  startVoiceInput() {
-    if (this.data.isRecording) {
-      // 停止录音
-      this.recorderManager.stop()
-      this.setData({ isRecording: false })
-    } else {
-      // 开始录音
-      wx.authorize({
-        scope: 'scope.record',
-        success: () => {
-          this.setData({ isRecording: true })
-          wx.showToast({ title: '正在录音，再次点击结束', icon: 'none', duration: 2000 })
-
-          this.recorderManager.start({
-            duration: 60000,      // 最长60秒
-            sampleRate: 16000,    // 采样率16kHz（适合语音识别API）
-            numberOfChannels: 1,  // 单声道
-            format: 'wav',        // 音频格式
-            audioSource: 'auto'
-          })
-        },
-        fail: () => {
-          wx.showModal({
-            title: '提示',
-            content: '需要录音权限才能使用语音功能',
-            confirmText: '去设置',
-            success: (res) => {
-              if (res.confirm) {
-                wx.openSetting()
-              }
-            }
-          })
-        }
+      // 定位到主输入框并唤起键盘
+      this.setData({ 
+        scrollToView: 'inputArea',
+        inputFocus: true 
       })
+      setTimeout(() => this.setData({ scrollToView: '' }), 500)
+    } else if (key === 'voice') {
+      // 打开语音录入弹窗
+      this.setData({ showVoiceModal: true })
     }
   },
-  // =====================================
+  // ========== 拍照识别弹窗功能 ==========
+  onTakePhoto() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['camera'],
+      success: (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath
+        this.setData({
+          cameraPreview: tempFilePath,
+          cameraImagePath: tempFilePath
+        })
+      }
+    })
+  },
 
-  // ========== 新增：上传语音文件到后端 ==========
+  onChooseAlbum() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album'],
+      success: (res) => {
+        const tempFilePath = res.tempFiles[0].tempFilePath
+        this.setData({
+          cameraPreview: tempFilePath,
+          cameraImagePath: tempFilePath
+        })
+      }
+    })
+  },
+
+  onRetake() {
+    this.setData({ cameraPreview: '', cameraImagePath: '' })
+  },
+
+  onConfirmPhoto() {
+    if (this.data.cameraImagePath) {
+      // 将图片填入主输入框（通过imageList）
+      this.setData({
+        imageList: [this.data.cameraImagePath],
+        showCameraModal: false,
+        cameraPreview: '',
+        cameraImagePath: ''
+      })
+      wx.showToast({ title: '已填入输入框', icon: 'success' })
+    }
+  },
+
+  closeCameraModal() {
+    this.setData({ 
+      showCameraModal: false, 
+      cameraPreview: '', 
+      cameraImagePath: '' 
+    })
+  },
+
+  // ========== 语音录入弹窗功能 ==========
+  onStartRecord() {
+    wx.authorize({
+      scope: 'scope.record',
+      success: () => {
+        this.setData({ isRecording: true, voiceText: '' })
+        this.recorderManager.start({
+          duration: 60000,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          format: 'wav',
+          audioSource: 'auto'
+        })
+      },
+      fail: () => {
+        wx.showModal({
+          title: '提示',
+          content: '需要录音权限才能使用语音功能',
+          confirmText: '去设置',
+          success: (res) => {
+            if (res.confirm) { wx.openSetting() }
+          }
+        })
+      }
+    })
+  },
+
+  onStopRecord() {
+    this.recorderManager.stop()
+    this.setData({ isRecording: false })
+  },
+
+  onConfirmVoice() {
+    if (this.data.voiceText) {
+      this.setData({
+        inputText: this.data.voiceText,
+        showVoiceModal: false,
+        voiceText: ''
+      })
+      wx.showToast({ title: '已填入输入框', icon: 'success' })
+    }
+  },
+
+  onRetryVoice() {
+    this.setData({ voiceText: '' })
+    this.onStartRecord()
+  },
+
+  closeVoiceModal() {
+    this.setData({ 
+      showVoiceModal: false, 
+      voiceText: '',
+      isRecording: false 
+    })
+  },
+
+  // ========== 上传语音文件到后端 ==========
   uploadVoice(tempFilePath) {
     wx.showLoading({ title: '识别中...' })
-
     wx.uploadFile({
-      url: config.voiceApiUrl,  // 需要在 config.js 中配置此地址
+      url: config.voiceApiUrl,
       filePath: tempFilePath,
       name: 'file',
       success: (res) => {
         wx.hideLoading()
-        // 解析返回结果（根据你的后端返回格式调整）
         let recognizedText = ''
         try {
           const data = JSON.parse(res.data)
@@ -155,59 +319,36 @@ innerAudioContext: null,
         }
 
         if (recognizedText && recognizedText !== '语音识别失败') {
-          this.setData({
-            inputText: recognizedText,
-            isRecording: false
-          })
+          this.setData({ voiceText: recognizedText })
           wx.showToast({ title: '识别成功', icon: 'success' })
         } else {
           wx.showToast({ title: '识别失败，请重试', icon: 'none' })
-          this.setData({ isRecording: false })
         }
       },
       fail: (err) => {
         wx.hideLoading()
         console.error('上传失败:', err)
         wx.showToast({ title: '网络错误', icon: 'none' })
-        this.setData({ isRecording: false })
       }
     })
   },
- 
+
+  // ========== 热门分类点击 ======
+  onHotCategoryTap(e) {
+    const key = e.currentTarget.dataset.key
+    // 切换到指南页并传递锚点参数
+    wx.switchTab({ 
+      url: '/pages/guide/guide',
+      success: () => {
+        // 通过全局变量传递锚点信息
+        app.globalData.guideAnchor = key
+      }
+    })
+  },
+
   // 输入框内容变化
   onInputText(e) {
     this.setData({ inputText: e.detail.value })
-  },
-
-  // 搜索按钮
-  onSearch() {
-    if (!this.data.inputText.trim()) {
-      wx.showToast({ title: '请输入内容', icon: 'none' })
-      return
-    }
-    this.doClassify()
-  },
-
-  // 选择图片
-  chooseImage() {
-    wx.chooseMedia({
-      count: 3,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const files = res.tempFiles.map(f => f.tempFilePath)
-        const newList = this.data.imageList.concat(files)
-        this.setData({ imageList: newList.slice(0, 3) })
-      }
-    })
-  },
-
-  // 删除已选图片
-  removeImage(e) {
-    const index = e.currentTarget.dataset.index
-    const list = this.data.imageList
-    list.splice(index, 1)
-    this.setData({ imageList: list })
   },
 
   // 点击"开始分类"
@@ -378,7 +519,7 @@ innerAudioContext: null,
         itemName: itemName,
         category: category
       },
-      success: (res) => {
+      success: () => {
         console.log('反馈已保存到后端:', itemName, category)
       },
       fail: (err) => {

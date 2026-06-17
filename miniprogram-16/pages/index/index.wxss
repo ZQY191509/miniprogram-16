@@ -363,10 +363,7 @@
   margin-top: 8px;
 }
 
-/* 结果列表 */
-.result-list {
-  /* 纵向排列 */
-}
+
 
 .result-item {
   display: flex;

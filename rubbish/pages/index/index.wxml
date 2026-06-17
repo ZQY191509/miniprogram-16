@@ -1,49 +1,41 @@
 <!--index.wxml-->
-<scroll-view scroll-y class="page-scroll" enhanced show-scrollbar="{{false}}">
+<scroll-view scroll-y class="page-scroll" enhanced show-scrollbar="{{false}}" scroll-into-view="{{scrollToView}}">
 <view class="container">
 
-  <!-- ===== 搜索栏 ===== -->
+  <!-- ===== 1. 全局搜索框（双功能） ===== -->
   <view class="search-bar">
     <text class="search-icon">🔍</text>
-    <input class="search-input" placeholder="搜索想要分类的物品..." value="{{inputText}}" bindinput="onInputText" confirm-type="search" bindconfirm="onSearch" />
-    <view class="search-btn" bindtap="onSearch">搜索</view>
+    <input class="search-input" placeholder="搜索物品分类 / 功能定位" value="{{searchText}}" bindinput="onSearchInput" confirm-type="search" bindconfirm="onSearchConfirm" />
+    <view class="search-btn" bindtap="onSearchConfirm">搜索</view>
   </view>
 
-  <!-- ===== 轮播 Banner ===== -->
-  <view class="banner-wrap">
-    <view class="banner-card" wx:for="{{banners}}" wx:key="icon" wx:if="{{index === currentBanner}}">
-      <text class="banner-icon">{{item.icon}}</text>
-      <view class="banner-info">
-        <text class="banner-title">{{item.title}}</text>
-        <text class="banner-desc">{{item.desc}}</text>
-      </view>
-    </view>
-    <view class="banner-dots">
-      <view class="dot {{currentBanner === index ? 'active' : ''}}" wx:for="{{banners}}" wx:key="icon" data-index="{{index}}" bindtap="switchBanner"></view>
-    </view>
-  </view>
-
-  <!-- ===== 快捷功能 ===== -->
+  <!-- ===== 2. 快捷功能栏 ===== -->
   <view class="action-grid">
-    <view class="action-item" wx:for="{{quickActions}}" wx:key="key" data-key="{{item.key}}" bindtap="onAction">
-      <view class="action-icon">{{item.icon}}</view>
-      <text class="action-text">{{item.text}}</text>
+    <view class="action-item" data-key="text" bindtap="onAction">
+      <view class="action-icon">📝</view>
+      <text class="action-text">文字分类</text>
     </view>
-    <!-- 录音状态提示 -->
-<view class="recording-tip" wx:if="{{isRecording}}">
-  <view class="recording-animation">🎤</view>
-  <text>正在录音，点击停止</text>
-</view>
-
+    <view class="action-item" data-key="camera" bindtap="onAction">
+      <view class="action-icon">📷</view>
+      <text class="action-text">拍照识别</text>
+    </view>
+    <view class="action-item" data-key="voice" bindtap="onAction">
+      <view class="action-icon">🎤</view>
+      <text class="action-text">语音录入</text>
+    </view>
+    <view class="action-item" data-key="history" bindtap="onAction">
+      <view class="action-icon">📋</view>
+      <text class="action-text">分类记录</text>
+    </view>
   </view>
 
-  <!-- ===== 分类输入卡片 ===== -->
-  <view class="card input-card">
+  <!-- ===== 4. 唯一主输入框 + AI识别 + 开始分类 ===== -->
+  <view class="card input-card" id="inputArea">
     <view class="card-header">
-      <text class="card-title">智能分类</text>
+      <text class="card-title">输入分类内容</text>
       <text class="card-tag">AI识别</text>
     </view>
-    <textarea placeholder="请输入需要分类的内容/物品名称..." class="input-area" value="{{inputText}}" bindinput="onInputText" maxlength="500"></textarea>
+    <textarea placeholder="请输入需要分类的内容/物品名称..." class="input-area" value="{{inputText}}" bindinput="onInputText" maxlength="500" focus="{{inputFocus}}" show-confirm-bar="{{false}}"></textarea>
 
     <!-- 已选图片预览 -->
     <view class="image-preview" wx:if="{{imageList.length > 0}}">
@@ -54,30 +46,25 @@
     </view>
 
     <view class="btn-row">
-      <button size="mini" class="btn-outline" bindtap="chooseImage">
-        <text>📎 上传图片</text>
-      </button>
-      <button size="mini" class="btn-primary-fill" bindtap="onStartClassify" loading="{{classifying}}" disabled="{{classifying}}">
+      <button size="mini" class="btn-primary-fill full-width" bindtap="onStartClassify" loading="{{classifying}}" disabled="{{classifying}}">
         <text>✨ {{classifying ? '分类中...' : '开始分类'}}</text>
       </button>
     </view>
   </view>
 
-  <!-- ===== 热门分类 ===== -->
+  <!-- ===== 4. 热门分类横向4个按钮 ===== -->
   <view class="section-header">
     <text class="section-title">🔥 热门分类</text>
-    <text class="section-more">查看全部 ›</text>
   </view>
-  <scroll-view scroll-x class="hot-scroll" enhanced show-scrollbar="{{false}}">
-    <view class="hot-item" wx:for="{{hotCategories}}" wx:key="name" style="background:{{item.color}}">
+  <view class="hot-grid">
+    <view class="hot-item" wx:for="{{hotCategories}}" wx:key="name" style="background:{{item.color}}" data-key="{{item.key}}" bindtap="onHotCategoryTap">
       <text class="hot-icon">{{item.icon}}</text>
       <text class="hot-name">{{item.name}}</text>
-      <text class="hot-count">{{item.count}}</text>
     </view>
-  </scroll-view>
+  </view>
 
-  <!-- ===== 分类结果 ===== -->
-  <view class="card result-card">
+  <!-- ===== 5. 分类结果展示区 ===== -->
+  <view class="card result-card" id="resultArea">
     <view class="card-header">
       <text class="card-title">分类结果</text>
       <text class="card-count" wx:if="{{resultData}}">共 {{resultData.length}} 项</text>
@@ -87,7 +74,7 @@
       <view class="empty-icon">📋</view>
       <text class="empty-txt">输入内容后，点击「开始分类」查看结果</text>
     </view>
-    <!-- 结果列表：纵向排列 -->
+    <!-- 结果列表 -->
     <view class="result-list" wx:else>
       <view class="result-item" wx:for="{{resultData}}" wx:key="content">
         <view class="result-index">{{index + 1}}</view>
@@ -101,19 +88,100 @@
     </view>
   </view>
 
-  <!-- ===== 每日小贴士 ===== -->
-  <view class="tip-card">
+  <!-- ===== 6. 每日小贴士区块 ===== -->
+  <view class="tip-card" id="tipArea">
     <view class="tip-head">
       <text class="tip-icon">💡</text>
       <text class="tip-title">每日分类小贴士</text>
     </view>
     <text class="tip-content">{{tip}}</text>
     <view class="tip-tags">
-      <text class="tag">有害垃圾</text>
-      <text class="tag">废电池</text>
-      <text class="tag">环保知识</text>
+      <text class="tag" wx:for="{{tipTags}}" wx:key="*this">{{item}}</text>
     </view>
   </view>
 
 </view>
 </scroll-view>
+
+<!-- ===== 搜索结果弹窗（搜物品） ===== -->
+<view class="modal-mask" wx:if="{{showSearchResult}}" bindtap="closeSearchResult">
+  <view class="modal-content" catchtap="preventBubble">
+    <view class="modal-header">
+      <text class="modal-title">搜索结果</text>
+      <text class="modal-close" bindtap="closeSearchResult">✕</text>
+    </view>
+    <view class="modal-body" wx:if="{{searchResultList.length > 0}}">
+      <view class="search-result-item" wx:for="{{searchResultList}}" wx:key="name">
+        <view class="result-info">
+          <text class="result-name">{{item.name}}</text>
+          <text class="result-category-tag" style="background:{{item.color}}">{{item.category}}</text>
+        </view>
+        <view class="fill-btn" data-name="{{item.name}}" bindtap="onFillInput">填入输入框</view>
+      </view>
+    </view>
+    <view class="modal-empty" wx:else>
+      <text>未找到相关分类，请尝试其他关键词</text>
+    </view>
+  </view>
+</view>
+
+<!-- ===== 拍照识别弹窗 ===== -->
+<view class="modal-mask" wx:if="{{showCameraModal}}" bindtap="closeCameraModal">
+  <view class="modal-content camera-modal" catchtap="preventBubble">
+    <view class="modal-header">
+      <text class="modal-title">拍照识别</text>
+      <text class="modal-close" bindtap="closeCameraModal">✕</text>
+    </view>
+    <view class="modal-body">
+      <!-- 拍照/相册选择 -->
+      <view class="camera-options" wx:if="{{!cameraPreview}}">
+        <view class="camera-option" bindtap="onTakePhoto">
+          <view class="camera-option-icon">📷</view>
+          <text>拍照</text>
+        </view>
+        <view class="camera-option" bindtap="onChooseAlbum">
+          <view class="camera-option-icon">🖼️</view>
+          <text>相册上传</text>
+        </view>
+      </view>
+      <!-- 识别预览 -->
+      <view class="camera-preview" wx:if="{{cameraPreview}}">
+        <image class="preview-image" src="{{cameraPreview}}" mode="aspectFit"></image>
+        <view class="preview-actions">
+          <button class="btn-outline" bindtap="onRetake">重新选择</button>
+          <button class="btn-primary-fill" bindtap="onConfirmPhoto">确认填入</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- ===== 语音录入弹窗 ===== -->
+<view class="modal-mask" wx:if="{{showVoiceModal}}" bindtap="closeVoiceModal">
+  <view class="modal-content voice-modal" catchtap="preventBubble">
+    <view class="modal-header">
+      <text class="modal-title">语音录入</text>
+      <text class="modal-close" bindtap="closeVoiceModal">✕</text>
+    </view>
+    <view class="modal-body voice-body">
+      <!-- 录音状态 -->
+      <view class="voice-recording" wx:if="{{isRecording}}">
+        <view class="voice-animation">🎤</view>
+        <text class="voice-status">正在录音...</text>
+        <text class="voice-tip">点击停止录音</text>
+      </view>
+      <!-- 识别结果 -->
+      <view class="voice-result" wx:if="{{voiceText}}">
+        <text class="voice-result-label">识别结果：</text>
+        <text class="voice-result-text">{{voiceText}}</text>
+      </view>
+      <!-- 操作按钮 -->
+      <view class="voice-actions">
+        <button class="btn-outline" bindtap="onStartRecord" wx:if="{{!isRecording && !voiceText}}">开始录音</button>
+        <button class="btn-recording" bindtap="onStopRecord" wx:if="{{isRecording}}">停止录音</button>
+        <button class="btn-primary-fill" bindtap="onConfirmVoice" wx:if="{{voiceText}}">确认填入</button>
+        <button class="btn-outline" bindtap="onRetryVoice" wx:if="{{voiceText}}">重新录音</button>
+      </view>
+    </view>
+  </view>
+</view>
